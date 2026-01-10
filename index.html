@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bubble Reflex</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<video autoplay muted loop id="bgVideo">
+  <source src="db0062305459035c86b481bac89ac583.mp4" type="video/mp4">
+</video>
+
+<div id="overlay">
+  <h1>Bubble Reflex</h1>
+
+  <div class="settings">
+    <label>Bubble Speed</label>
+    <select id="speed">
+      <option value="2000">Slow</option>
+      <option value="1200" selected>Normal</option>
+      <option value="600">Fast</option>
+    </select>
+  </div>
+
+  <button id="startBtn">Start</button>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
