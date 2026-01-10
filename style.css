@@ -19,8 +19,8 @@ body {
   position: fixed;
   width: 100%;
   height: 100%;
-  background: rgba(0,0,0,0.4);
-  backdrop-filter: blur(6px);
+  background: rgba(0,0,0,0.3);
+  backdrop-filter: blur(8px);
   color: white;
 
   display: flex;
@@ -32,21 +32,58 @@ body {
 
 h1 {
   font-size: 48px;
-  letter-spacing: 3px;
+  letter-spacing: 2px;
 }
 
-.settings {
-  background: rgba(255,255,255,0.1);
+.glass, .glassBtn {
+  background: rgba(255,255,255,0.15);
+  backdrop-filter: blur(12px);
+  border-radius: 20px;
   padding: 15px 30px;
-  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.3);
+  color: white;
 }
 
-button {
-  padding: 15px 50px;
-  font-size: 20px;
-  border-radius: 30px;
-  border: none;
-  background: #00ffff;
-  color: black;
+.glassBtn {
+  font-size: 22px;
   cursor: pointer;
 }
+
+#gameArea {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+}
+
+.bubble {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  background: radial-gradient(circle at top left,
+    rgba(255,255,255,0.9),
+    rgba(0,255,255,0.3),
+    rgba(0,100,255,0.2)
+  );
+  box-shadow: 0 0 20px rgba(0,255,255,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  color: white;
+  animation: floatUp linear;
+}
+
+@keyframes floatUp {
+  from { transform: translateY(0); }
+  to { transform: translateY(-600px); opacity: 0; }
+}
+
+.pop {
+  animation: pop 0.3s forwards;
+}
+
+@keyframes pop {
+  0% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.5); opacity: 0; }
+  }
