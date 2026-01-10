@@ -10,10 +10,14 @@
   <source src="db0062305459035c86b481bac89ac583.mp4" type="video/mp4">
 </video>
 
+<audio id="bgMusic" loop>
+  <source src="astheticdb.mp3" type="audio/mp3">
+</audio>
+
 <div id="overlay">
   <h1>Bubble Reflex</h1>
 
-  <div class="settings">
+  <div class="glass">
     <label>Bubble Speed</label>
     <select id="speed">
       <option value="2000">Slow</option>
@@ -22,9 +26,18 @@
     </select>
   </div>
 
-  <button id="startBtn">Start</button>
+  <div class="glass">
+    <label>Video</label>
+    <select id="videoSelect">
+      <option value="db0062305459035c86b481bac89ac583.mp4">Nature</option>
+    </select>
+  </div>
+
+  <button class="glassBtn" id="startBtn">Start</button>
 </div>
+
+<div id="gameArea"></div>
 
 <script src="script.js"></script>
 </body>
-</html>
+  </html>
