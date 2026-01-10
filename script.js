@@ -57,4 +57,4 @@ document.addEventListener("keydown", e => {
 
 function startGame() {
   setInterval(createBubble, 800);
-}
+    }
