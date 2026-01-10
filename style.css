@@ -1,0 +1,52 @@
+* {
+  margin: 0;
+  padding: 0;
+  font-family: Arial;
+}
+
+body {
+  overflow: hidden;
+}
+
+#bgVideo {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+#overlay {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  backdrop-filter: blur(6px);
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 20px;
+}
+
+h1 {
+  font-size: 48px;
+  letter-spacing: 3px;
+}
+
+.settings {
+  background: rgba(255,255,255,0.1);
+  padding: 15px 30px;
+  border-radius: 12px;
+}
+
+button {
+  padding: 15px 50px;
+  font-size: 20px;
+  border-radius: 30px;
+  border: none;
+  background: #00ffff;
+  color: black;
+  cursor: pointer;
+}
