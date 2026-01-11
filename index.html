@@ -1,12 +1,105 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Bubble Reflex</title>
-  <link rel="stylesheet" href="style.css">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bubble Reflex</title>
+
+<style>
+body {
+  margin:0;
+  overflow:hidden;
+  font-family:sans-serif;
+  background:black;
+}
+
+#bgVideo {
+  position:fixed;
+  inset:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:-1;
+}
+
+/* Menu */
+#overlay {
+  position:absolute;
+  inset:0;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  gap:20px;
+  backdrop-filter: blur(4px);
+  color:white;
+}
+
+/* Neumorphic button (your Uiverse style) */
+.neu-button {
+  background-color: rgba(255,255,255,0.8);
+  border-radius: 50px;
+  box-shadow: inset 4px 4px 10px #bcbcbc,
+              inset -4px -4px 10px #ffffff;
+  color: #4d4d4d;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 15px 40px;
+  transition: all 0.2s ease-in-out;
+  border: 2px solid rgb(206, 206, 206);
+}
+.neu-button:hover {
+  box-shadow: inset 2px 2px 5px #bcbcbc,
+              inset -2px -2px 5px #ffffff,
+              2px 2px 5px #bcbcbc,
+              -2px -2px 5px #ffffff;
+}
+
+/* Bubble area */
+#gameArea {
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+
+/* Soap bubbles */
+.bubble {
+  position:absolute;
+  bottom:-80px;
+  width:70px;
+  height:70px;
+  border-radius:50%;
+  background: radial-gradient(circle at 30% 30%,
+    rgba(255,255,255,0.8),
+    rgba(255,255,255,0.3),
+    rgba(255,255,255,0.05));
+  box-shadow: inset -5px -5px 10px rgba(255,255,255,0.4),
+              inset 5px 5px 10px rgba(0,0,0,0.15),
+              0 0 20px rgba(255,255,255,0.4);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  font-size:28px;
+  color:white;
+  animation: floatUp linear forwards;
+  pointer-events:auto;
+}
+
+@keyframes floatUp {
+  to { transform: translateY(-120vh); }
+}
+
+.pop {
+  animation: pop 0.3s forwards;
+}
+@keyframes pop {
+  to { transform: scale(2); opacity:0; }
+}
+</style>
 </head>
+
 <body>
 
-<video autoplay muted loop id="bgVideo">
+<video id="bgVideo" autoplay muted loop playsinline>
   <source src="db0062305459035c86b481bac89ac583.mp4" type="video/mp4">
 </video>
 
@@ -17,27 +110,94 @@
 <div id="overlay">
   <h1>Bubble Reflex</h1>
 
-  <div class="glass">
-    <label>Bubble Speed</label>
-    <select id="speed">
-      <option value="2000">Slow</option>
-      <option value="1200" selected>Normal</option>
-      <option value="600">Fast</option>
-    </select>
+  <div>
+    <button class="neu-button" onclick="setVideo(0)">Video 1</button>
+    <button class="neu-button" onclick="setVideo(1)">Video 2</button>
   </div>
 
-  <div class="glass">
-    <label>Video</label>
-    <select id="videoSelect">
-      <option value="db0062305459035c86b481bac89ac583.mp4">Nature</option>
-    </select>
-  </div>
+  <select id="speed" class="neu-button">
+    <option value="4500">Slow</option>
+    <option value="2800">Medium</option>
+    <option value="1600">Fast</option>
+  </select>
 
-  <button class="glassBtn" id="startBtn">Start</button>
+  <button id="startBtn" class="neu-button">Start</button>
 </div>
 
 <div id="gameArea"></div>
 
-<script src="script.js"></script>
+<script>
+const videos = [
+  "db0062305459035c86b481bac89ac583.mp4",
+  "pinvid2.mp4"
+];
+
+const bgVideo = document.getElementById("bgVideo");
+const music = document.getElementById("bgMusic");
+const overlay = document.getElementById("overlay");
+const gameArea = document.getElementById("gameArea");
+const speed = document.getElementById("speed");
+
+let bubbles = [];
+
+/* Unlock audio/video on first tap */
+document.body.addEventListener("touchstart", unlock, { once:true });
+document.body.addEventListener("click", unlock, { once:true });
+function unlock() {
+  bgVideo.play();
+  music.play();
+}
+
+/* Change background video */
+function setVideo(i) {
+  bgVideo.src = videos[i];
+  bgVideo.play();
+}
+
+/* Start game */
+document.getElementById("startBtn").onclick = () => {
+  overlay.style.display = "none";
+  setInterval(spawnBubble, 900);
+};
+
+function randomChar() {
+  return "asdfjkl".charAt(Math.floor(Math.random()*7));
+}
+
+function spawnBubble() {
+  const b = document.createElement("div");
+  b.className = "bubble";
+  const c = randomChar();
+  b.textContent = c;
+  b.dataset.char = c;
+
+  b.style.left = Math.random()*(window.innerWidth-80)+"px";
+  b.style.animationDuration = speed.value+"ms";
+
+  b.onclick = ()=>pop(b);
+
+  gameArea.appendChild(b);
+  bubbles.push(b);
+
+  setTimeout(()=>pop(b), speed.value);
+}
+
+function pop(b) {
+  if(!b || !b.parentNode) return;
+  b.classList.add("pop");
+  bubbles = bubbles.filter(x=>x!==b);
+  setTimeout(()=>b.remove(),300);
+}
+
+document.addEventListener("keydown", e=>{
+  for(const b of bubbles){
+    if(b.dataset.char===e.key.toLowerCase()){
+      pop(b);
+      break;
+    }
+  }
+});
+</script>
+
 </body>
   </html>
