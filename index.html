@@ -5,20 +5,18 @@
 <title>Bubble Reflex</title>
 
 <style>
-body { margin:0; overflow:hidden; background:black; }
+body{margin:0;overflow:hidden;background:black;}
 
-#bgVideo {
+#videoCanvas{
   position:fixed;
   inset:0;
   width:100%;
   height:100%;
-  object-fit:cover;
   z-index:0;
-  pointer-events:none;
 }
 
-#overlay {
-  position:absolute;
+#overlay{
+  position:fixed;
   inset:0;
   z-index:10;
   display:flex;
@@ -26,39 +24,37 @@ body { margin:0; overflow:hidden; background:black; }
   justify-content:center;
   align-items:center;
   gap:20px;
-  backdrop-filter: blur(4px);
+  backdrop-filter: blur(6px);
   color:white;
 }
 
-/* Neumorphic */
-.neu-button {
-  background-color: rgba(255,255,255,0.8);
-  border-radius: 50px;
+/* Neumorphic buttons */
+.neu-button{
+  background:rgba(255,255,255,0.85);
+  border-radius:50px;
   box-shadow: inset 4px 4px 10px #bcbcbc,
               inset -4px -4px 10px #ffffff;
-  color: #4d4d4d;
-  cursor: pointer;
-  font-size: 18px;
-  padding: 15px 40px;
-  border: 2px solid rgb(206, 206, 206);
+  color:#333;
+  cursor:pointer;
+  font-size:18px;
+  padding:14px 36px;
+  border:2px solid #ccc;
 }
 
-/* Game */
-#gameArea {
-  position:absolute;
+#gameArea{
+  position:fixed;
   inset:0;
   z-index:5;
-  pointer-events:none;
 }
 
-.bubble {
+.bubble{
   position:absolute;
   bottom:-80px;
   width:70px;
   height:70px;
   border-radius:50%;
-  background: radial-gradient(circle at 30% 30%,
-    rgba(255,255,255,0.8),
+  background:radial-gradient(circle at 30% 30%,
+    rgba(255,255,255,0.9),
     rgba(255,255,255,0.3),
     rgba(255,255,255,0.05));
   display:flex;
@@ -66,25 +62,31 @@ body { margin:0; overflow:hidden; background:black; }
   align-items:center;
   font-size:28px;
   color:white;
-  animation: floatUp linear forwards;
+  animation:floatUp linear forwards;
   pointer-events:auto;
 }
 
-@keyframes floatUp { to { transform: translateY(-120vh); } }
-.pop { animation: pop 0.3s forwards; }
-@keyframes pop { to { transform: scale(2); opacity:0; } }
+@keyframes floatUp{
+  to{transform:translateY(-120vh);}
+}
+.pop{animation:pop 0.3s forwards;}
+@keyframes pop{
+  to{transform:scale(2);opacity:0;}
+}
 </style>
 </head>
 
 <body>
 
-<video id="bgVideo" autoplay muted loop playsinline>
+<video id="bgVideo" muted loop playsinline style="display:none">
   <source src="db0062305459035c86b481bac89ac583.mp4">
 </video>
 
 <audio id="bgMusic" loop>
   <source src="astheticdb.mp3">
 </audio>
+
+<canvas id="videoCanvas"></canvas>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
@@ -106,34 +108,54 @@ body { margin:0; overflow:hidden; background:black; }
 <div id="gameArea"></div>
 
 <script>
-const videos = [
+const videos=[
   "db0062305459035c86b481bac89ac583.mp4",
   "pinvid2.mp4"
 ];
 
-const bgVideo = document.getElementById("bgVideo");
-const music = document.getElementById("bgMusic");
+const video=document.getElementById("bgVideo");
+const music=document.getElementById("bgMusic");
+const canvas=document.getElementById("videoCanvas");
+const ctx=canvas.getContext("2d");
+const gameArea=document.getElementById("gameArea");
 
-document.body.addEventListener("touchstart", unlock, { once:true });
-document.body.addEventListener("click", unlock, { once:true });
+function resize(){
+  canvas.width=innerWidth;
+  canvas.height=innerHeight;
+}
+window.onresize=resize;
+resize();
+
+function draw(){
+  if(video.readyState>=2){
+    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+document.body.addEventListener("touchstart",unlock,{once:true});
+document.body.addEventListener("click",unlock,{once:true});
 
 function unlock(){
-  bgVideo.play();
+  video.play();
   music.play();
 }
 
 function setVideo(i){
-  bgVideo.src = videos[i];
-  bgVideo.play();
+  video.src=videos[i];
+  video.play();
 }
 
-document.getElementById("startBtn").onclick = ()=>{
+document.getElementById("startBtn").onclick=()=>{
   document.getElementById("overlay").style.display="none";
   setInterval(spawnBubble,900);
 };
 
 let bubbles=[];
-function randomChar(){ return "asdfjkl".charAt(Math.random()*7|0); }
+function randomChar(){
+  return "asdfjkl".charAt(Math.random()*7|0);
+}
 
 function spawnBubble(){
   const b=document.createElement("div");
