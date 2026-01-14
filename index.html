@@ -77,47 +77,33 @@ body{
   text-align:center;
 }
 
-.popupItem:hover{
-  background:#eee;
-}
+.popupItem:hover{ background:#eee; }
 </style>
 </head>
 
 <body>
 
-<!-- MAIN BACKGROUND VIDEO -->
-<video id="bgVideo" muted loop playsinline style="display:none"></video>
+<video id="bgVideo" muted loop playsinline></video>
+<video id="transitionVideo" playsinline></video>
 
-<!-- TRANSITION VIDEO -->
-<video id="transitionVideo" playsinline style="display:none">
-  <source src="videotrans.mp4">
-</video>
-
-<!-- AUDIO -->
 <audio id="bgMusic" loop></audio>
-<audio id="transitionSound">
-  <source src="Transition.mp3">
-</audio>
+<audio id="transitionSound"></audio>
 
 <canvas id="videoCanvas"></canvas>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
-
-  <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
-  <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
-
-  <button id="startBtn" class="neu-button">Start</button>
+  <button class="neu-button" id="videoBtn">Select Video</button>
+  <button class="neu-button" id="musicBtn">Select Music</button>
+  <button class="neu-button" id="startBtn">Start</button>
 </div>
 
-<!-- VIDEO POPUP -->
-<div id="videoPopup" onclick="closeVideoPopup()">
-  <div class="popupList" id="videoList" onclick="event.stopPropagation()"></div>
+<div id="videoPopup">
+  <div class="popupList" id="videoList"></div>
 </div>
 
-<!-- MUSIC POPUP -->
-<div id="musicPopup" onclick="closeMusicPopup()">
-  <div class="popupList" id="musicList" onclick="event.stopPropagation()"></div>
+<div id="musicPopup">
+  <div class="popupList" id="musicList"></div>
 </div>
 
 <script>
@@ -139,33 +125,34 @@ const musicTracks=[
 
 /* ---------------- ELEMENTS ---------------- */
 
-const bgVideo=document.getElementById("bgVideo");
-const transitionVideo=document.getElementById("transitionVideo");
-const music=document.getElementById("bgMusic");
-const transitionSound=document.getElementById("transitionSound");
+const bgVideo = document.getElementById("bgVideo");
+const transitionVideo = document.getElementById("transitionVideo");
+const bgMusic = document.getElementById("bgMusic");
+const transitionSound = document.getElementById("transitionSound");
 
-const canvas=document.getElementById("videoCanvas");
-const ctx=canvas.getContext("2d");
+const overlay = document.getElementById("overlay");
+const videoPopup = document.getElementById("videoPopup");
+const musicPopup = document.getElementById("musicPopup");
 
-const videoList=document.getElementById("videoList");
-const musicList=document.getElementById("musicList");
+const canvas = document.getElementById("videoCanvas");
+const ctx = canvas.getContext("2d");
 
-let currentVideo = null;
 let playingTransition = false;
 
 /* ---------------- CANVAS ---------------- */
 
 function resize(){
-  canvas.width=innerWidth;
-  canvas.height=innerHeight;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 }
 resize();
-window.onresize=resize;
+addEventListener("resize", resize);
 
 function draw(){
-  if(playingTransition && transitionVideo.readyState>=2){
+  if(playingTransition && transitionVideo.readyState >= 2){
     ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
-  }else if(bgVideo.readyState>=2){
+  }
+  else if(bgVideo.readyState >= 2){
     ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
   }
   requestAnimationFrame(draw);
@@ -174,58 +161,54 @@ draw();
 
 /* ---------------- DEFAULT VIDEO ---------------- */
 
-currentVideo = videos[Math.floor(Math.random()*videos.length)];
-bgVideo.src = currentVideo.file;
-bgVideo.play();
+const randomVideo = videos[Math.floor(Math.random()*videos.length)];
+bgVideo.src = randomVideo.file;
 
-/* ---------------- USER UNLOCK ---------------- */
+/* ---------------- POPUPS ---------------- */
 
-document.body.addEventListener("click",()=>{
-  bgVideo.play();
-},{once:true});
+document.getElementById("videoBtn").onclick = ()=> videoPopup.style.display="flex";
+document.getElementById("musicBtn").onclick = ()=> musicPopup.style.display="flex";
 
-/* ---------------- VIDEO POPUP ---------------- */
+videoPopup.onclick = ()=> videoPopup.style.display="none";
+musicPopup.onclick = ()=> musicPopup.style.display="none";
 
-function openVideoPopup(){ videoPopup.style.display="flex"; }
-function closeVideoPopup(){ videoPopup.style.display="none"; }
+/* ---------------- VIDEO LIST ---------------- */
 
 videos.forEach(v=>{
-  const item=document.createElement("div");
-  item.className="popupItem";
-  item.textContent=v.name;
-  item.onclick=()=>{
-    currentVideo = v;
+  const div=document.createElement("div");
+  div.className="popupItem";
+  div.textContent=v.name;
+  div.onclick=e=>{
+    e.stopPropagation();
     bgVideo.src=v.file;
-    bgVideo.play();
-    closeVideoPopup();
+    videoPopup.style.display="none";
   };
-  videoList.appendChild(item);
+  videoList.appendChild(div);
 });
 
-/* ---------------- MUSIC POPUP ---------------- */
-
-function openMusicPopup(){ musicPopup.style.display="flex"; }
-function closeMusicPopup(){ musicPopup.style.display="none"; }
+/* ---------------- MUSIC LIST ---------------- */
 
 musicTracks.forEach(m=>{
-  const item=document.createElement("div");
-  item.className="popupItem";
-  item.textContent=m.name;
-  item.onclick=()=>{
-    music.src=m.file;
-    closeMusicPopup();
+  const div=document.createElement("div");
+  div.className="popupItem";
+  div.textContent=m.name;
+  div.onclick=e=>{
+    e.stopPropagation();
+    bgMusic.src=m.file;
+    musicPopup.style.display="none";
   };
-  musicList.appendChild(item);
+  musicList.appendChild(div);
 });
 
-/* ---------------- START TRANSITION ---------------- */
+/* ---------------- START ---------------- */
 
-document.getElementById("startBtn").onclick=()=>{
+document.getElementById("startBtn").onclick = ()=>{
   overlay.style.display="none";
 
   playingTransition = true;
-  transitionVideo.currentTime = 0;
-  transitionSound.currentTime = 0;
+
+  transitionVideo.src = "videotrans.mp4";
+  transitionSound.src = "Transition.mp3";
 
   transitionVideo.play();
   transitionSound.play();
@@ -233,10 +216,15 @@ document.getElementById("startBtn").onclick=()=>{
   transitionVideo.onended = ()=>{
     playingTransition = false;
     bgVideo.play();
-    music.play().catch(()=>{});
+    bgMusic.play();
   };
 };
+
+/* ---- USER INTERACTION UNLOCK ---- */
+document.body.addEventListener("click",()=>{
+  bgVideo.play().catch(()=>{});
+},{once:true});
 </script>
 
 </body>
-    </html>
+  </html>
