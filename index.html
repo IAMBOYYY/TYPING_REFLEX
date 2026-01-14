@@ -5,7 +5,12 @@
 <title>Bubble Reflex</title>
 
 <style>
-body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
+body{
+  margin:0;
+  overflow:hidden;
+  background:black;
+  font-family:sans-serif;
+}
 
 #videoCanvas{
   position:fixed;
@@ -23,7 +28,7 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   flex-direction:column;
   justify-content:center;
   align-items:center;
-  gap:20px;
+  gap:22px;
   backdrop-filter: blur(6px);
   color:white;
 }
@@ -40,7 +45,8 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   border:2px solid #ccc;
 }
 
-#videoPopup{
+#videoPopup,
+#musicPopup{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,0.5);
@@ -51,7 +57,7 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   align-items:center;
 }
 
-#videoList{
+.popupList{
   background:rgba(255,255,255,0.85);
   border-radius:20px;
   padding:20px;
@@ -62,7 +68,7 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   gap:12px;
 }
 
-.videoItem{
+.popupItem{
   padding:12px 20px;
   border-radius:30px;
   background:white;
@@ -71,49 +77,26 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   text-align:center;
 }
 
-.videoItem:hover{
+.popupItem:hover{
   background:#eee;
-}
-
-#gameArea{
-  position:fixed;
-  inset:0;
-  z-index:5;
-}
-
-.bubble{
-  position:absolute;
-  bottom:-80px;
-  width:70px;
-  height:70px;
-  border-radius:50%;
-  background:radial-gradient(circle at 30% 30%,
-    rgba(255,255,255,0.9),
-    rgba(255,255,255,0.3),
-    rgba(255,255,255,0.05));
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  font-size:28px;
-  color:white;
-  animation:floatUp linear forwards;
-}
-
-@keyframes floatUp{
-  to{transform:translateY(-120vh);}
-}
-.pop{animation:pop 0.3s forwards;}
-@keyframes pop{
-  to{transform:scale(2);opacity:0;}
 }
 </style>
 </head>
 
 <body>
 
+<!-- MAIN BACKGROUND VIDEO -->
 <video id="bgVideo" muted loop playsinline style="display:none"></video>
-<audio id="bgMusic" loop>
-  <source src="astheticdb.mp3">
+
+<!-- TRANSITION VIDEO -->
+<video id="transitionVideo" playsinline style="display:none">
+  <source src="videotrans.mp4">
+</video>
+
+<!-- AUDIO -->
+<audio id="bgMusic" loop></audio>
+<audio id="transitionSound">
+  <source src="Transition.mp3">
 </audio>
 
 <canvas id="videoCanvas"></canvas>
@@ -122,23 +105,24 @@ body{margin:0;overflow:hidden;background:black;font-family:sans-serif;}
   <h1>Bubble Reflex</h1>
 
   <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
-
-  <select id="speed" class="neu-button">
-    <option value="4500">Slow</option>
-    <option value="2800">Medium</option>
-    <option value="1600">Fast</option>
-  </select>
+  <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
 
   <button id="startBtn" class="neu-button">Start</button>
 </div>
 
+<!-- VIDEO POPUP -->
 <div id="videoPopup" onclick="closeVideoPopup()">
-  <div id="videoList" onclick="event.stopPropagation()"></div>
+  <div class="popupList" id="videoList" onclick="event.stopPropagation()"></div>
 </div>
 
-<div id="gameArea"></div>
+<!-- MUSIC POPUP -->
+<div id="musicPopup" onclick="closeMusicPopup()">
+  <div class="popupList" id="musicList" onclick="event.stopPropagation()"></div>
+</div>
 
 <script>
+/* ---------------- DATA ---------------- */
+
 const videos=[
   {name:"Dream Aesthetic",file:"db0062305459035c86b481bac89ac583.mp4"},
   {name:"Pin Mood",file:"pinvid2.mp4"},
@@ -149,80 +133,110 @@ const videos=[
   {name:"Anime Chill",file:"anime.mp4"}
 ];
 
-const video=document.getElementById("bgVideo");
+const musicTracks=[
+  {name:"Aesthetic DB",file:"astheticdb.mp3"}
+];
+
+/* ---------------- ELEMENTS ---------------- */
+
+const bgVideo=document.getElementById("bgVideo");
+const transitionVideo=document.getElementById("transitionVideo");
 const music=document.getElementById("bgMusic");
+const transitionSound=document.getElementById("transitionSound");
+
 const canvas=document.getElementById("videoCanvas");
 const ctx=canvas.getContext("2d");
-const gameArea=document.getElementById("gameArea");
-const videoList=document.getElementById("videoList");
 
-canvas.width=innerWidth;
-canvas.height=innerHeight;
-window.onresize=()=>{canvas.width=innerWidth;canvas.height=innerHeight};
+const videoList=document.getElementById("videoList");
+const musicList=document.getElementById("musicList");
+
+let currentVideo = null;
+let playingTransition = false;
+
+/* ---------------- CANVAS ---------------- */
+
+function resize(){
+  canvas.width=innerWidth;
+  canvas.height=innerHeight;
+}
+resize();
+window.onresize=resize;
 
 function draw(){
-  if(video.readyState>=2)
-    ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  if(playingTransition && transitionVideo.readyState>=2){
+    ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
+  }else if(bgVideo.readyState>=2){
+    ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
+  }
   requestAnimationFrame(draw);
 }
 draw();
 
+/* ---------------- DEFAULT VIDEO ---------------- */
+
+currentVideo = videos[Math.floor(Math.random()*videos.length)];
+bgVideo.src = currentVideo.file;
+bgVideo.play();
+
+/* ---------------- USER UNLOCK ---------------- */
+
 document.body.addEventListener("click",()=>{
-  video.play();
-  music.play();
+  bgVideo.play();
 },{once:true});
 
-function openVideoPopup(){
-  videoPopup.style.display="flex";
-}
-function closeVideoPopup(){
-  videoPopup.style.display="none";
-}
+/* ---------------- VIDEO POPUP ---------------- */
+
+function openVideoPopup(){ videoPopup.style.display="flex"; }
+function closeVideoPopup(){ videoPopup.style.display="none"; }
 
 videos.forEach(v=>{
-  const btn=document.createElement("div");
-  btn.className="videoItem";
-  btn.textContent=v.name;
-  btn.onclick=()=>{
-    video.src=v.file;
-    video.play();
+  const item=document.createElement("div");
+  item.className="popupItem";
+  item.textContent=v.name;
+  item.onclick=()=>{
+    currentVideo = v;
+    bgVideo.src=v.file;
+    bgVideo.play();
     closeVideoPopup();
   };
-  videoList.appendChild(btn);
+  videoList.appendChild(item);
 });
+
+/* ---------------- MUSIC POPUP ---------------- */
+
+function openMusicPopup(){ musicPopup.style.display="flex"; }
+function closeMusicPopup(){ musicPopup.style.display="none"; }
+
+musicTracks.forEach(m=>{
+  const item=document.createElement("div");
+  item.className="popupItem";
+  item.textContent=m.name;
+  item.onclick=()=>{
+    music.src=m.file;
+    closeMusicPopup();
+  };
+  musicList.appendChild(item);
+});
+
+/* ---------------- START TRANSITION ---------------- */
 
 document.getElementById("startBtn").onclick=()=>{
   overlay.style.display="none";
-  setInterval(spawnBubble,900);
+
+  playingTransition = true;
+  transitionVideo.currentTime = 0;
+  transitionSound.currentTime = 0;
+
+  transitionVideo.play();
+  transitionSound.play();
+
+  transitionVideo.onended = ()=>{
+    playingTransition = false;
+    bgVideo.play();
+    music.play().catch(()=>{});
+  };
 };
-
-let bubbles=[];
-function spawnBubble(){
-  const b=document.createElement("div");
-  b.className="bubble";
-  const c="asdfjkl".charAt(Math.random()*7|0);
-  b.textContent=c;
-  b.dataset.char=c;
-  b.style.left=Math.random()*(innerWidth-80)+"px";
-  b.style.animationDuration=speed.value+"ms";
-  b.onclick=()=>pop(b);
-  gameArea.appendChild(b);
-  bubbles.push(b);
-  setTimeout(()=>pop(b),speed.value);
-}
-
-function pop(b){
-  if(!b||!b.parentNode)return;
-  b.classList.add("pop");
-  setTimeout(()=>b.remove(),300);
-}
-
-document.addEventListener("keydown",e=>{
-  bubbles.forEach(b=>{
-    if(b.dataset.char===e.key.toLowerCase()) pop(b);
-  });
-});
 </script>
 
 </body>
-</html>
+    </html>
