@@ -17,7 +17,6 @@ body{
   inset:0;
   width:100%;
   height:100%;
-  z-index:0;
 }
 
 #overlay{
@@ -76,46 +75,34 @@ body{
   font-weight:600;
   text-align:center;
 }
-
-.popupItem:hover{
-  background:#eee;
-}
+.popupItem:hover{ background:#eee; }
 </style>
 </head>
 
 <body>
 
-<!-- BACKGROUND VIDEO -->
 <video id="bgVideo" muted loop playsinline style="display:none"></video>
 
-<!-- TRANSITION VIDEO -->
 <video id="transitionVideo" playsinline style="display:none">
   <source src="videotrans.mp4">
 </video>
 
-<!-- MUSIC -->
 <audio id="bgMusic" loop></audio>
-<audio id="transitionSound">
-  <source src="transition.mp3">
-</audio>
+<audio id="transitionSound" src="transition.mp3"></audio>
 
 <canvas id="videoCanvas"></canvas>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
-
   <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
   <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
-
   <button id="startBtn" class="neu-button">Start</button>
 </div>
 
-<!-- VIDEO POPUP -->
 <div id="videoPopup" onclick="closeVideoPopup()">
   <div class="popupList" id="videoList" onclick="event.stopPropagation()"></div>
 </div>
 
-<!-- MUSIC POPUP -->
 <div id="musicPopup" onclick="closeMusicPopup()">
   <div class="popupList" id="musicList" onclick="event.stopPropagation()"></div>
 </div>
@@ -139,8 +126,8 @@ const videos = [
 const musicTracks = [
   "astheticdb.mp3",
   "pastlives.mp3",
-  "love navanti.mp3",
-  "waka waka.mp3"
+  "lovenavanti.mp3",
+  "wakawaka.mp3"
 ];
 
 /* ================= ELEMENTS ================= */
@@ -153,12 +140,7 @@ const transitionSound = document.getElementById("transitionSound");
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
-const videoPopup = document.getElementById("videoPopup");
-const musicPopup = document.getElementById("musicPopup");
-const videoList = document.getElementById("videoList");
-const musicList = document.getElementById("musicList");
-
-let currentVideo = "";
+let currentVideo = videos[Math.floor(Math.random()*videos.length)];
 let currentMusic = "";
 let playingTransition = false;
 
@@ -174,23 +156,17 @@ window.onresize = resize;
 function draw(){
   if(playingTransition && transitionVideo.readyState >= 2){
     ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
-  }else if(bgVideo.readyState >= 2){
+  } else if(bgVideo.readyState >= 2){
     ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ================= DEFAULT RANDOM VIDEO ================= */
+/* ================= INIT ================= */
 
-currentVideo = videos[Math.floor(Math.random()*videos.length)];
-bgVideo.src = encodeURI(currentVideo);
-
-/* ================= USER UNLOCK ================= */
-
-document.body.addEventListener("click", ()=>{
-  bgVideo.play().catch(()=>{});
-}, { once:true });
+bgVideo.src = currentVideo;
+document.body.addEventListener("click", ()=> bgVideo.play().catch(()=>{}), {once:true});
 
 /* ================= VIDEO POPUP ================= */
 
@@ -199,15 +175,13 @@ function closeVideoPopup(){ videoPopup.style.display="none"; }
 
 videos.forEach(v=>{
   const d = document.createElement("div");
-  d.className = "popupItem";
-  d.textContent = v.replace(".mp4","");
-  d.onclick = ()=>{
-    currentVideo = v;
-    bgVideo.src = encodeURI(v);
+  d.className="popupItem";
+  d.textContent=v.replace(".mp4","");
+  d.onclick=()=>{
+    currentVideo=v;
+    bgVideo.src=v;
     bgVideo.play().catch(()=>{});
-    if(currentMusic){
-      bgMusic.play().catch(()=>{});
-    }
+    if(currentMusic) bgMusic.play().catch(()=>{});
     closeVideoPopup();
   };
   videoList.appendChild(d);
@@ -219,14 +193,17 @@ function openMusicPopup(){ musicPopup.style.display="flex"; }
 function closeMusicPopup(){ musicPopup.style.display="none"; }
 
 musicTracks.forEach(m=>{
-  const d = document.createElement("div");
-  d.className = "popupItem";
-  d.textContent = m.replace(".mp3","");
-  d.onclick = ()=>{
-    currentMusic = m;
-    bgMusic.src = encodeURI(m);
+  const d=document.createElement("div");
+  d.className="popupItem";
+  d.textContent=m.replace(".mp3","");
+  d.onclick=()=>{
+    currentMusic=m;
+    bgMusic.pause();
+    bgMusic.src=m;
     bgMusic.load();
-    bgMusic.play().catch(()=>{});
+    bgMusic.play()
+      .then(()=>console.log("Playing:", m))
+      .catch(e=>console.error("Audio error:", m, e));
     closeMusicPopup();
   };
   musicList.appendChild(d);
@@ -234,29 +211,25 @@ musicTracks.forEach(m=>{
 
 /* ================= START ================= */
 
-document.getElementById("startBtn").onclick = ()=>{
+startBtn.onclick=()=>{
   overlay.style.display="none";
-
-  // stop bg
   bgVideo.pause();
   bgMusic.pause();
 
-  playingTransition = true;
-  transitionVideo.currentTime = 0;
-  transitionSound.currentTime = 0;
+  playingTransition=true;
+  transitionVideo.currentTime=0;
+  transitionSound.currentTime=0;
 
   transitionVideo.play();
   transitionSound.play();
 
-  transitionVideo.onended = ()=>{
-    playingTransition = false;
+  transitionVideo.onended=()=>{
+    playingTransition=false;
     bgVideo.play().catch(()=>{});
-    if(currentMusic){
-      bgMusic.play().catch(()=>{});
-    }
+    if(currentMusic) bgMusic.play().catch(()=>{});
   };
 };
 </script>
 
 </body>
-</html>
+    </html>
