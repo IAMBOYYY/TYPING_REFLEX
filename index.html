@@ -129,6 +129,14 @@ const videos=[
 const musicTracks=[
  "astheticdb.mp3",
  "pastlives.mp3",
+ "love%20navanti.mp3",  // FIXED: Encoded space as %20
+ "waka%20waka.mp3"      // FIXED: Encoded space as %20
+];
+
+// Display names for music (without encoding)
+const musicDisplayNames=[
+ "astheticdb.mp3",
+ "pastlives.mp3",
  "love navanti.mp3",
  "waka waka.mp3"
 ];
@@ -197,12 +205,12 @@ videos.forEach(v=>{
 
 /* ---------------- MUSIC POPUP ---------------- */
 
-musicTracks.forEach(m=>{
+musicTracks.forEach((m, index)=>{
   const d=document.createElement("div");
   d.className="popupItem";
-  d.textContent=m;
+  d.textContent=musicDisplayNames[index];  // Use display name with space
   d.onclick=()=>{
-    currentMusic=m;
+    currentMusic=m;  // Use encoded filename
     bgMusic.src=m;
     bgMusic.load();
     bgMusic.play().catch(()=>{});
@@ -246,4 +254,5 @@ function startExperience(){
 </script>
 
 </body>
-</html>
+  </html>
+  
