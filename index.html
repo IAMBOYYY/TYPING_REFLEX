@@ -77,23 +77,19 @@ body{
   text-align:center;
 }
 
-.popupItem:hover{
-  background:#eee;
-}
+.popupItem:hover{ background:#eee; }
 </style>
 </head>
 
 <body>
 
-<!-- BACKGROUND VIDEO -->
+<!-- VIDEOS -->
 <video id="bgVideo" muted loop playsinline style="display:none"></video>
-
-<!-- TRANSITION VIDEO -->
 <video id="transitionVideo" playsinline style="display:none">
   <source src="videotrans.mp4">
 </video>
 
-<!-- MUSIC -->
+<!-- AUDIO -->
 <audio id="bgMusic" loop></audio>
 <audio id="transitionSound">
   <source src="transition.mp3">
@@ -103,19 +99,15 @@ body{
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
-
   <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
   <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
-
   <button id="startBtn" class="neu-button">Start</button>
 </div>
 
-<!-- VIDEO POPUP -->
 <div id="videoPopup" onclick="closeVideoPopup()">
   <div class="popupList" id="videoList" onclick="event.stopPropagation()"></div>
 </div>
 
-<!-- MUSIC POPUP -->
 <div id="musicPopup" onclick="closeMusicPopup()">
   <div class="popupList" id="musicList" onclick="event.stopPropagation()"></div>
 </div>
@@ -149,16 +141,13 @@ const bgVideo = document.getElementById("bgVideo");
 const transitionVideo = document.getElementById("transitionVideo");
 const bgMusic = document.getElementById("bgMusic");
 const transitionSound = document.getElementById("transitionSound");
-
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
-
-const videoList = document.getElementById("videoList");
-const musicList = document.getElementById("musicList");
 
 let selectedVideo = null;
 let selectedMusic = null;
 let playingTransition = false;
+let audioUnlocked = false;
 
 /* ---------------- CANVAS ---------------- */
 
@@ -170,28 +159,29 @@ resize();
 window.onresize = resize;
 
 function draw(){
-  if(playingTransition && transitionVideo.readyState >= 2){
+  if(playingTransition && transitionVideo.readyState>=2){
     ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
-  } else if(bgVideo.readyState >= 2){
+  }else if(bgVideo.readyState>=2){
     ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ---------------- DEFAULT RANDOM VIDEO ---------------- */
+/* ---------------- DEFAULT VIDEO ---------------- */
 
 selectedVideo = videos[Math.floor(Math.random()*videos.length)];
 bgVideo.src = selectedVideo.file;
 bgVideo.play();
 
-/* ---------------- USER UNLOCK ---------------- */
+/* ---------------- AUDIO UNLOCK ---------------- */
 
 document.body.addEventListener("click",()=>{
-  bgVideo.play().catch(()=>{});
+  audioUnlocked = true;
+  bgMusic.play().catch(()=>{});
 },{once:true});
 
-/* ---------------- VIDEO POPUP ---------------- */
+/* ---------------- POPUPS ---------------- */
 
 function openVideoPopup(){ videoPopup.style.display="flex"; }
 function closeVideoPopup(){ videoPopup.style.display="none"; }
@@ -204,12 +194,13 @@ videos.forEach(v=>{
     selectedVideo = v;
     bgVideo.src = v.file;
     bgVideo.play();
+    if(audioUnlocked && selectedMusic){
+      bgMusic.play().catch(()=>{});
+    }
     closeVideoPopup();
   };
   videoList.appendChild(item);
 });
-
-/* ---------------- MUSIC POPUP ---------------- */
 
 function openMusicPopup(){ musicPopup.style.display="flex"; }
 function closeMusicPopup(){ musicPopup.style.display="none"; }
@@ -221,12 +212,14 @@ musicTracks.forEach(m=>{
   item.onclick=()=>{
     selectedMusic = m;
     bgMusic.src = m.file;
+    bgMusic.play().catch(()=>{});
+    audioUnlocked = true;
     closeMusicPopup();
   };
   musicList.appendChild(item);
 });
 
-/* ---------------- START BUTTON ---------------- */
+/* ---------------- START ---------------- */
 
 document.getElementById("startBtn").onclick=()=>{
   overlay.style.display="none";
@@ -249,4 +242,4 @@ document.getElementById("startBtn").onclick=()=>{
 </script>
 
 </body>
-                     </html>
+</html>
