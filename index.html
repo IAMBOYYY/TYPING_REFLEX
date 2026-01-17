@@ -58,7 +58,7 @@ body{
 }
 
 .popupList{
-  background:rgba(255,255,255,0.85);
+  background:rgba(255,255,255,0.9);
   border-radius:20px;
   padding:20px;
   max-height:70vh;
@@ -77,50 +77,70 @@ body{
   text-align:center;
 }
 
-.popupItem:hover{ background:#eee; }
+.popupItem:hover{
+  background:#eee;
+}
 </style>
 </head>
 
 <body>
 
-<video id="bgVideo" muted loop playsinline></video>
-<video id="transitionVideo" playsinline></video>
+<!-- BACKGROUND VIDEO -->
+<video id="bgVideo" muted loop playsinline style="display:none"></video>
 
+<!-- TRANSITION VIDEO -->
+<video id="transitionVideo" playsinline style="display:none">
+  <source src="videotrans.mp4">
+</video>
+
+<!-- MUSIC -->
 <audio id="bgMusic" loop></audio>
-<audio id="transitionSound"></audio>
+<audio id="transitionSound">
+  <source src="transition.mp3">
+</audio>
 
 <canvas id="videoCanvas"></canvas>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
-  <button class="neu-button" id="videoBtn">Select Video</button>
-  <button class="neu-button" id="musicBtn">Select Music</button>
-  <button class="neu-button" id="startBtn">Start</button>
+
+  <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
+  <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
+
+  <button id="startBtn" class="neu-button">Start</button>
 </div>
 
-<div id="videoPopup">
-  <div class="popupList" id="videoList"></div>
+<!-- VIDEO POPUP -->
+<div id="videoPopup" onclick="closeVideoPopup()">
+  <div class="popupList" id="videoList" onclick="event.stopPropagation()"></div>
 </div>
 
-<div id="musicPopup">
-  <div class="popupList" id="musicList"></div>
+<!-- MUSIC POPUP -->
+<div id="musicPopup" onclick="closeMusicPopup()">
+  <div class="popupList" id="musicList" onclick="event.stopPropagation()"></div>
 </div>
 
 <script>
 /* ---------------- DATA ---------------- */
 
-const videos=[
-  {name:"Dream Aesthetic",file:"db0062305459035c86b481bac89ac583.mp4"},
-  {name:"Pin Mood",file:"pinvid2.mp4"},
-  {name:"Hanging Swing",file:"hangingswing.mp4"},
-  {name:"Baby Driver",file:"babydriver.mp4"},
-  {name:"Bench Aesthetic",file:"astheticbench.mp4"},
-  {name:"Astronaut",file:"asteronout.mp4"},
-  {name:"Anime Chill",file:"anime.mp4"}
+const videos = [
+  {name:"Dream Aesthetic", file:"db0062305459035c86b481bac89ac583.mp4"},
+  {name:"Pin Mood", file:"pinvid2.mp4"},
+  {name:"Anime", file:"anime.mp4"},
+  {name:"Astronaut", file:"asteronout.mp4"},
+  {name:"Aesthetic Bench", file:"astheticbench.mp4"},
+  {name:"Hanging Swing", file:"hangingswing.mp4"},
+  {name:"Baby Driver", file:"babydriver.mp4"},
+  {name:"Batman", file:"batman.mp4"},
+  {name:"Car Speed", file:"carspeed.mp4"},
+  {name:"Minecraft", file:"minecraft.mp4"}
 ];
 
-const musicTracks=[
-  {name:"Aesthetic DB",file:"astheticdb.mp3"}
+const musicTracks = [
+  {name:"Aesthetic DB", file:"astheticdb.mp3"},
+  {name:"Past Lives", file:"pastlives.mp3"},
+  {name:"Love Nwantiti", file:"CKay - love nwantiti (ah ah ah)_Super.mp3"},
+  {name:"Waka Waka (Slowed)", file:"Waka waka [ Slowed Reverb ] Shakira T.mp3"}
 ];
 
 /* ---------------- ELEMENTS ---------------- */
@@ -130,13 +150,14 @@ const transitionVideo = document.getElementById("transitionVideo");
 const bgMusic = document.getElementById("bgMusic");
 const transitionSound = document.getElementById("transitionSound");
 
-const overlay = document.getElementById("overlay");
-const videoPopup = document.getElementById("videoPopup");
-const musicPopup = document.getElementById("musicPopup");
-
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
+const videoList = document.getElementById("videoList");
+const musicList = document.getElementById("musicList");
+
+let selectedVideo = null;
+let selectedMusic = null;
 let playingTransition = false;
 
 /* ---------------- CANVAS ---------------- */
@@ -146,69 +167,73 @@ function resize(){
   canvas.height = innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+window.onresize = resize;
 
 function draw(){
   if(playingTransition && transitionVideo.readyState >= 2){
     ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
-  }
-  else if(bgVideo.readyState >= 2){
+  } else if(bgVideo.readyState >= 2){
     ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ---------------- DEFAULT VIDEO ---------------- */
+/* ---------------- DEFAULT RANDOM VIDEO ---------------- */
 
-const randomVideo = videos[Math.floor(Math.random()*videos.length)];
-bgVideo.src = randomVideo.file;
+selectedVideo = videos[Math.floor(Math.random()*videos.length)];
+bgVideo.src = selectedVideo.file;
+bgVideo.play();
 
-/* ---------------- POPUPS ---------------- */
+/* ---------------- USER UNLOCK ---------------- */
 
-document.getElementById("videoBtn").onclick = ()=> videoPopup.style.display="flex";
-document.getElementById("musicBtn").onclick = ()=> musicPopup.style.display="flex";
+document.body.addEventListener("click",()=>{
+  bgVideo.play().catch(()=>{});
+},{once:true});
 
-videoPopup.onclick = ()=> videoPopup.style.display="none";
-musicPopup.onclick = ()=> musicPopup.style.display="none";
+/* ---------------- VIDEO POPUP ---------------- */
 
-/* ---------------- VIDEO LIST ---------------- */
+function openVideoPopup(){ videoPopup.style.display="flex"; }
+function closeVideoPopup(){ videoPopup.style.display="none"; }
 
 videos.forEach(v=>{
-  const div=document.createElement("div");
-  div.className="popupItem";
-  div.textContent=v.name;
-  div.onclick=e=>{
-    e.stopPropagation();
-    bgVideo.src=v.file;
-    videoPopup.style.display="none";
+  const item=document.createElement("div");
+  item.className="popupItem";
+  item.textContent=v.name;
+  item.onclick=()=>{
+    selectedVideo = v;
+    bgVideo.src = v.file;
+    bgVideo.play();
+    closeVideoPopup();
   };
-  videoList.appendChild(div);
+  videoList.appendChild(item);
 });
 
-/* ---------------- MUSIC LIST ---------------- */
+/* ---------------- MUSIC POPUP ---------------- */
+
+function openMusicPopup(){ musicPopup.style.display="flex"; }
+function closeMusicPopup(){ musicPopup.style.display="none"; }
 
 musicTracks.forEach(m=>{
-  const div=document.createElement("div");
-  div.className="popupItem";
-  div.textContent=m.name;
-  div.onclick=e=>{
-    e.stopPropagation();
-    bgMusic.src=m.file;
-    musicPopup.style.display="none";
+  const item=document.createElement("div");
+  item.className="popupItem";
+  item.textContent=m.name;
+  item.onclick=()=>{
+    selectedMusic = m;
+    bgMusic.src = m.file;
+    closeMusicPopup();
   };
-  musicList.appendChild(div);
+  musicList.appendChild(item);
 });
 
-/* ---------------- START ---------------- */
+/* ---------------- START BUTTON ---------------- */
 
-document.getElementById("startBtn").onclick = ()=>{
+document.getElementById("startBtn").onclick=()=>{
   overlay.style.display="none";
 
   playingTransition = true;
-
-  transitionVideo.src = "videotrans.mp4";
-  transitionSound.src = "Transition.mp3";
+  transitionVideo.currentTime = 0;
+  transitionSound.currentTime = 0;
 
   transitionVideo.play();
   transitionSound.play();
@@ -216,15 +241,12 @@ document.getElementById("startBtn").onclick = ()=>{
   transitionVideo.onended = ()=>{
     playingTransition = false;
     bgVideo.play();
-    bgMusic.play();
+    if(selectedMusic){
+      bgMusic.play().catch(()=>{});
+    }
   };
 };
-
-/* ---- USER INTERACTION UNLOCK ---- */
-document.body.addEventListener("click",()=>{
-  bgVideo.play().catch(()=>{});
-},{once:true});
 </script>
 
 </body>
-  </html>
+                     </html>
