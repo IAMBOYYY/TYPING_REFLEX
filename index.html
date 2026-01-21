@@ -118,6 +118,7 @@ const videos = [
   "astheticbench.mp4",
   "asteronout.mp4",
   "anime.mp4",
+  "animegirl.mp4",   // ✅ added (landscape test)
   "batman.mp4",
   "carspeed.mp4",
   "minecraft.mp4"
@@ -200,9 +201,7 @@ musicTracks.forEach(m=>{
     bgMusic.pause();
     bgMusic.src=m;
     bgMusic.load();
-    bgMusic.play()
-      .then(()=>console.log("Playing:", m))
-      .catch(e=>console.error("Audio error:", m, e));
+    bgMusic.play().catch(()=>{});
     closeMusicPopup();
   };
   musicList.appendChild(d);
