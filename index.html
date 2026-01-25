@@ -9,7 +9,7 @@ body{
   margin:0;
   overflow:hidden;
   background:black;
-  font-family:sans-serif;
+  font-family:Arial, sans-serif;
 }
 
 /* ===== CANVAS ===== */
@@ -20,19 +20,33 @@ body{
   height:100%;
 }
 
-/* ===== LYRICS ===== */
+/* ===== LYRICS (YOUR ANIMATION) ===== */
 #lyricsBox{
   position:fixed;
-  bottom:12%;
+  bottom:14%;
   width:100%;
   text-align:center;
-  font-size:22px;
-  color:white;
-  text-shadow:0 0 12px rgba(0,0,0,0.9);
-  z-index:5;
-  padding:0 16px;
+  z-index:6;
   pointer-events:none;
-  transition:opacity 0.4s ease;
+}
+
+.masked-text{
+  font-size:2.2rem;
+  font-weight:bold;
+  color:transparent;
+  background-image:url('https://images.unsplash.com/photo-1732535725600-f805d8b33c9c?q=80&w=1470');
+  background-size:200%;
+  background-position:0 50%;
+  background-clip:text;
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  animation:animate-background 5s infinite alternate linear;
+  padding:0 20px;
+}
+
+@keyframes animate-background{
+  from{ background-position:0 50%; }
+  to{ background-position:100% 50%; }
 }
 
 /* ===== OVERLAY ===== */
@@ -45,7 +59,7 @@ body{
   justify-content:center;
   align-items:center;
   gap:22px;
-  backdrop-filter: blur(6px);
+  backdrop-filter:blur(6px);
   color:white;
 }
 
@@ -62,8 +76,7 @@ body{
 }
 
 /* ===== POPUPS ===== */
-#videoPopup,
-#musicPopup{
+#videoPopup,#musicPopup{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,0.5);
@@ -103,7 +116,10 @@ body{
 <audio id="bgMusic" loop></audio>
 
 <canvas id="videoCanvas"></canvas>
-<div id="lyricsBox"></div>
+
+<div id="lyricsBox">
+  <div id="lyricsText" class="masked-text"></div>
+</div>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
@@ -121,73 +137,64 @@ body{
 </div>
 
 <script>
-/* ===== DATA ===== */
+/* ===== ALL YOUR FILES ===== */
 const videos = [
-  "animegirl.mp4",
+  "db0062305459035c86b481bac89ac583.mp4",
+  "pinvid2.mp4",
+  "hangingswing.mp4",
+  "babydriver.mp4",
+  "astheticbench.mp4",
+  "asteronout.mp4",
   "anime.mp4",
+  "animegirl.mp4",
   "batman.mp4",
-  "carspeed.mp4"
+  "carspeed.mp4",
+  "minecraft.mp4"
 ];
 
 const musicTracks = [
-  "pastlives.mp3"
+  "astheticdb.mp3",
+  "pastlives.mp3",
+  "cigarette.mp3",
+  "love_navanti.mp3",
+  "waka_waka.mp3"
 ];
 
 /* ===== ELEMENTS ===== */
-const bgVideo = document.getElementById("bgVideo");
-const bgMusic = document.getElementById("bgMusic");
-const canvas = document.getElementById("videoCanvas");
-const ctx = canvas.getContext("2d");
-const lyricsBox = document.getElementById("lyricsBox");
+const bgVideo=document.getElementById("bgVideo");
+const bgMusic=document.getElementById("bgMusic");
+const canvas=document.getElementById("videoCanvas");
+const ctx=canvas.getContext("2d");
+const lyricsText=document.getElementById("lyricsText");
 
-let currentVideo = videos[0];
-let currentMusic = "";
-let lyricsData = [];
+let currentVideo=videos[0];
+let currentMusic="";
+let lyrics=[];
 
 /* ===== RESIZE ===== */
 function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+  canvas.width=innerWidth;
+  canvas.height=innerHeight;
 }
 resize();
-window.onresize = resize;
+window.onresize=resize;
 
 /* ===== ASPECT RATIO DRAW ===== */
-function drawVideo(video){
-  const cw = canvas.width;
-  const ch = canvas.height;
-  const vw = video.videoWidth;
-  const vh = video.videoHeight;
-
-  if(!vw || !vh) return;
-
-  const scale = Math.max(cw/vw, ch/vh);
-  const w = vw * scale;
-  const h = vh * scale;
-  const x = (cw - w) / 2;
-  const y = (ch - h) / 2;
-
-  ctx.drawImage(video, x, y, w, h);
-}
-
 function draw(){
-  if(bgVideo.readyState >= 2){
-    drawVideo(bgVideo);
+  if(bgVideo.readyState>=2){
+    const cw=canvas.width,ch=canvas.height;
+    const vw=bgVideo.videoWidth,vh=bgVideo.videoHeight;
+    const scale=Math.max(cw/vw,ch/vh);
+    const w=vw*scale,h=vh*scale;
+    ctx.drawImage(bgVideo,(cw-w)/2,(ch-h)/2,w,h);
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ===== INIT ===== */
-bgVideo.src = currentVideo;
-document.body.addEventListener("click", ()=> bgVideo.play().catch(()=>{}), {once:true});
-
-/* ===== VIDEO POPUP ===== */
-function openVideoPopup(){ videoPopup.style.display="flex"; }
-function closeVideoPopup(){ videoPopup.style.display="none"; }
-
+/* ===== VIDEO LIST ===== */
 videos.forEach(v=>{
-  const d = document.createElement("div");
+  const d=document.createElement("div");
   d.className="popupItem";
   d.textContent=v.replace(".mp4","");
   d.onclick=()=>{
@@ -199,10 +206,7 @@ videos.forEach(v=>{
   videoList.appendChild(d);
 });
 
-/* ===== MUSIC POPUP ===== */
-function openMusicPopup(){ musicPopup.style.display="flex"; }
-function closeMusicPopup(){ musicPopup.style.display="none"; }
-
+/* ===== MUSIC LIST ===== */
 musicTracks.forEach(m=>{
   const d=document.createElement("div");
   d.className="popupItem";
@@ -211,45 +215,53 @@ musicTracks.forEach(m=>{
     currentMusic=m;
     bgMusic.src=m;
     bgMusic.play().catch(()=>{});
-    loadLyrics();
+    lyricsText.textContent="";
+    if(m==="pastlives.mp3") loadLyrics();
     closeMusicPopup();
   };
   musicList.appendChild(d);
 });
 
-/* ===== LYRICS LOAD ===== */
+/* ===== LYRICS ===== */
 async function loadLyrics(){
-  const res = await fetch("pastlives.json");
-  const data = await res.json();
-  lyricsData = data.lyrics.map(l=>({
-    time: toSeconds(l.timestamp),
-    text: l.text
+  const res=await fetch("pastlives.json");
+  const data=await res.json();
+  lyrics=data.lyrics.map(l=>({
+    time:toSec(l.timestamp),
+    text:l.text
   }));
 }
 
-/* ===== LYRICS SYNC ===== */
-function toSeconds(t){
-  const [m,s] = t.split(":").map(Number);
+function toSec(t){
+  const [m,s]=t.split(":").map(Number);
   return m*60+s;
 }
 
-bgMusic.addEventListener("timeupdate", ()=>{
-  const t = bgMusic.currentTime;
-  for(let i=lyricsData.length-1;i>=0;i--){
-    if(t >= lyricsData[i].time){
-      lyricsBox.textContent = lyricsData[i].text;
+bgMusic.addEventListener("timeupdate",()=>{
+  if(currentMusic!=="pastlives.mp3") return;
+  const t=bgMusic.currentTime;
+  for(let i=lyrics.length-1;i>=0;i--){
+    if(t>=lyrics[i].time){
+      lyricsText.textContent=lyrics[i].text;
       break;
     }
   }
 });
 
+/* ===== POPUP CONTROLS ===== */
+function openVideoPopup(){ videoPopup.style.display="flex"; }
+function closeVideoPopup(){ videoPopup.style.display="none"; }
+function openMusicPopup(){ musicPopup.style.display="flex"; }
+function closeMusicPopup(){ musicPopup.style.display="none"; }
+
 /* ===== START ===== */
 startBtn.onclick=()=>{
   overlay.style.display="none";
+  bgVideo.src=currentVideo;
   bgVideo.play().catch(()=>{});
   if(currentMusic) bgMusic.play().catch(()=>{});
 };
 </script>
 
 </body>
-  </html>
+</html>
