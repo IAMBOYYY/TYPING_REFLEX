@@ -12,6 +12,7 @@ body{
   font-family:sans-serif;
 }
 
+/* ===== CANVAS ===== */
 #videoCanvas{
   position:fixed;
   inset:0;
@@ -19,6 +20,22 @@ body{
   height:100%;
 }
 
+/* ===== LYRICS ===== */
+#lyricsBox{
+  position:fixed;
+  bottom:12%;
+  width:100%;
+  text-align:center;
+  font-size:22px;
+  color:white;
+  text-shadow:0 0 12px rgba(0,0,0,0.9);
+  z-index:5;
+  padding:0 16px;
+  pointer-events:none;
+  transition:opacity 0.4s ease;
+}
+
+/* ===== OVERLAY ===== */
 #overlay{
   position:fixed;
   inset:0;
@@ -44,6 +61,7 @@ body{
   border:2px solid #ccc;
 }
 
+/* ===== POPUPS ===== */
 #videoPopup,
 #musicPopup{
   position:fixed;
@@ -82,15 +100,10 @@ body{
 <body>
 
 <video id="bgVideo" muted loop playsinline style="display:none"></video>
-
-<video id="transitionVideo" playsinline style="display:none">
-  <source src="videotrans.mp4">
-</video>
-
 <audio id="bgMusic" loop></audio>
-<audio id="transitionSound" src="transition.mp3"></audio>
 
 <canvas id="videoCanvas"></canvas>
+<div id="lyricsBox"></div>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
@@ -108,44 +121,30 @@ body{
 </div>
 
 <script>
-/* ================= DATA ================= */
-
+/* ===== DATA ===== */
 const videos = [
-  "db0062305459035c86b481bac89ac583.mp4",
-  "pinvid2.mp4",
-  "hangingswing.mp4",
-  "babydriver.mp4",
-  "astheticbench.mp4",
-  "asteronout.mp4",
+  "animegirl.mp4",
   "anime.mp4",
-  "animegirl.mp4",   // ✅ added (landscape test)
   "batman.mp4",
-  "carspeed.mp4",
-  "minecraft.mp4"
+  "carspeed.mp4"
 ];
 
 const musicTracks = [
-  "astheticdb.mp3",
-  "pastlives.mp3",
-  "cigarette.mp3"
+  "pastlives.mp3"
 ];
 
-/* ================= ELEMENTS ================= */
-
+/* ===== ELEMENTS ===== */
 const bgVideo = document.getElementById("bgVideo");
-const transitionVideo = document.getElementById("transitionVideo");
 const bgMusic = document.getElementById("bgMusic");
-const transitionSound = document.getElementById("transitionSound");
-
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
+const lyricsBox = document.getElementById("lyricsBox");
 
-let currentVideo = videos[Math.floor(Math.random()*videos.length)];
+let currentVideo = videos[0];
 let currentMusic = "";
-let playingTransition = false;
+let lyricsData = [];
 
-/* ================= CANVAS ================= */
-
+/* ===== RESIZE ===== */
 function resize(){
   canvas.width = innerWidth;
   canvas.height = innerHeight;
@@ -153,23 +152,37 @@ function resize(){
 resize();
 window.onresize = resize;
 
+/* ===== ASPECT RATIO DRAW ===== */
+function drawVideo(video){
+  const cw = canvas.width;
+  const ch = canvas.height;
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  if(!vw || !vh) return;
+
+  const scale = Math.max(cw/vw, ch/vh);
+  const w = vw * scale;
+  const h = vh * scale;
+  const x = (cw - w) / 2;
+  const y = (ch - h) / 2;
+
+  ctx.drawImage(video, x, y, w, h);
+}
+
 function draw(){
-  if(playingTransition && transitionVideo.readyState >= 2){
-    ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
-  } else if(bgVideo.readyState >= 2){
-    ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
+  if(bgVideo.readyState >= 2){
+    drawVideo(bgVideo);
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ================= INIT ================= */
-
+/* ===== INIT ===== */
 bgVideo.src = currentVideo;
 document.body.addEventListener("click", ()=> bgVideo.play().catch(()=>{}), {once:true});
 
-/* ================= VIDEO POPUP ================= */
-
+/* ===== VIDEO POPUP ===== */
 function openVideoPopup(){ videoPopup.style.display="flex"; }
 function closeVideoPopup(){ videoPopup.style.display="none"; }
 
@@ -181,14 +194,12 @@ videos.forEach(v=>{
     currentVideo=v;
     bgVideo.src=v;
     bgVideo.play().catch(()=>{});
-    if(currentMusic) bgMusic.play().catch(()=>{});
     closeVideoPopup();
   };
   videoList.appendChild(d);
 });
 
-/* ================= MUSIC POPUP ================= */
-
+/* ===== MUSIC POPUP ===== */
 function openMusicPopup(){ musicPopup.style.display="flex"; }
 function closeMusicPopup(){ musicPopup.style.display="none"; }
 
@@ -198,36 +209,47 @@ musicTracks.forEach(m=>{
   d.textContent=m.replace(".mp3","");
   d.onclick=()=>{
     currentMusic=m;
-    bgMusic.pause();
     bgMusic.src=m;
-    bgMusic.load();
     bgMusic.play().catch(()=>{});
+    loadLyrics();
     closeMusicPopup();
   };
   musicList.appendChild(d);
 });
 
-/* ================= START ================= */
+/* ===== LYRICS LOAD ===== */
+async function loadLyrics(){
+  const res = await fetch("pastlives.json");
+  const data = await res.json();
+  lyricsData = data.lyrics.map(l=>({
+    time: toSeconds(l.timestamp),
+    text: l.text
+  }));
+}
 
+/* ===== LYRICS SYNC ===== */
+function toSeconds(t){
+  const [m,s] = t.split(":").map(Number);
+  return m*60+s;
+}
+
+bgMusic.addEventListener("timeupdate", ()=>{
+  const t = bgMusic.currentTime;
+  for(let i=lyricsData.length-1;i>=0;i--){
+    if(t >= lyricsData[i].time){
+      lyricsBox.textContent = lyricsData[i].text;
+      break;
+    }
+  }
+});
+
+/* ===== START ===== */
 startBtn.onclick=()=>{
   overlay.style.display="none";
-  bgVideo.pause();
-  bgMusic.pause();
-
-  playingTransition=true;
-  transitionVideo.currentTime=0;
-  transitionSound.currentTime=0;
-
-  transitionVideo.play();
-  transitionSound.play();
-
-  transitionVideo.onended=()=>{
-    playingTransition=false;
-    bgVideo.play().catch(()=>{});
-    if(currentMusic) bgMusic.play().catch(()=>{});
-  };
+  bgVideo.play().catch(()=>{});
+  if(currentMusic) bgMusic.play().catch(()=>{});
 };
 </script>
 
 </body>
-</html>
+  </html>
