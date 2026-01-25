@@ -9,10 +9,9 @@ body{
   margin:0;
   overflow:hidden;
   background:black;
-  font-family:Arial, sans-serif;
+  font-family:sans-serif;
 }
 
-/* ===== CANVAS ===== */
 #videoCanvas{
   position:fixed;
   inset:0;
@@ -20,36 +19,6 @@ body{
   height:100%;
 }
 
-/* ===== LYRICS (YOUR ANIMATION) ===== */
-#lyricsBox{
-  position:fixed;
-  bottom:14%;
-  width:100%;
-  text-align:center;
-  z-index:6;
-  pointer-events:none;
-}
-
-.masked-text{
-  font-size:2.2rem;
-  font-weight:bold;
-  color:transparent;
-  background-image:url('https://images.unsplash.com/photo-1732535725600-f805d8b33c9c?q=80&w=1470');
-  background-size:200%;
-  background-position:0 50%;
-  background-clip:text;
-  -webkit-background-clip:text;
-  -webkit-text-fill-color:transparent;
-  animation:animate-background 5s infinite alternate linear;
-  padding:0 20px;
-}
-
-@keyframes animate-background{
-  from{ background-position:0 50%; }
-  to{ background-position:100% 50%; }
-}
-
-/* ===== OVERLAY ===== */
 #overlay{
   position:fixed;
   inset:0;
@@ -59,7 +28,7 @@ body{
   justify-content:center;
   align-items:center;
   gap:22px;
-  backdrop-filter:blur(6px);
+  backdrop-filter: blur(6px);
   color:white;
 }
 
@@ -75,8 +44,8 @@ body{
   border:2px solid #ccc;
 }
 
-/* ===== POPUPS ===== */
-#videoPopup,#musicPopup{
+#videoPopup,
+#musicPopup{
   position:fixed;
   inset:0;
   background:rgba(0,0,0,0.5);
@@ -107,19 +76,40 @@ body{
   text-align:center;
 }
 .popupItem:hover{ background:#eee; }
+
+/* === NEW: Lyrics Styling === */
+#lyricContainer {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+  z-index: 5;
+  pointer-events: none;
+  width: 80%;
+  transition: opacity 0.3s ease;
+}
 </style>
 </head>
 
 <body>
 
 <video id="bgVideo" muted loop playsinline style="display:none"></video>
+
+<video id="transitionVideo" playsinline style="display:none">
+  <source src="videotrans.mp4">
+</video>
+
 <audio id="bgMusic" loop></audio>
+<audio id="transitionSound" src="transition.mp3"></audio>
 
 <canvas id="videoCanvas"></canvas>
 
-<div id="lyricsBox">
-  <div id="lyricsText" class="masked-text"></div>
-</div>
+<div id="lyricContainer"></div>
 
 <div id="overlay">
   <h1>Bubble Reflex</h1>
@@ -137,7 +127,8 @@ body{
 </div>
 
 <script>
-/* ===== ALL YOUR FILES ===== */
+/* ================= DATA ================= */
+
 const videos = [
   "db0062305459035c86b481bac89ac583.mp4",
   "pinvid2.mp4",
@@ -155,113 +146,157 @@ const videos = [
 const musicTracks = [
   "astheticdb.mp3",
   "pastlives.mp3",
-  "cigarette.mp3",
-  "love_navanti.mp3",
-  "waka_waka.mp3"
+  "cigarette.mp3"
 ];
 
-/* ===== ELEMENTS ===== */
-const bgVideo=document.getElementById("bgVideo");
-const bgMusic=document.getElementById("bgMusic");
-const canvas=document.getElementById("videoCanvas");
-const ctx=canvas.getContext("2d");
-const lyricsText=document.getElementById("lyricsText");
+/* ================= ELEMENTS ================= */
 
-let currentVideo=videos[0];
-let currentMusic="";
-let lyrics=[];
+const bgVideo = document.getElementById("bgVideo");
+const transitionVideo = document.getElementById("transitionVideo");
+const bgMusic = document.getElementById("bgMusic");
+const transitionSound = document.getElementById("transitionSound");
+const lyricContainer = document.getElementById("lyricContainer");
 
-/* ===== RESIZE ===== */
+const canvas = document.getElementById("videoCanvas");
+const ctx = canvas.getContext("2d");
+
+let currentVideo = videos[Math.floor(Math.random()*videos.length)];
+let currentMusic = "";
+let playingTransition = false;
+let pastLivesLyrics = [];
+
+/* ================= NEW: LYRICS LOGIC ================= */
+
+// Function to convert "00:17" to seconds (17)
+function parseTimestamp(timeStr) {
+  const parts = timeStr.split(':');
+  return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+}
+
+// Fetch lyrics from your GitHub file
+fetch('pastlives.json')
+  .then(response => response.json())
+  .then(data => {
+    pastLivesLyrics = data.lyrics.map(l => ({
+      time: parseTimestamp(l.timestamp),
+      text: l.text
+    }));
+  }).catch(e => console.log("Lyrics file not found yet."));
+
+function updateLyrics() {
+  if (currentMusic === "pastlives.mp3") {
+    const currentTime = bgMusic.currentTime;
+    // Find the lyric that matches current time
+    const activeLyric = pastLivesLyrics.reduce((prev, curr) => {
+      return (curr.time <= currentTime) ? curr : prev;
+    }, { text: "" });
+    
+    lyricContainer.textContent = activeLyric.text;
+  } else {
+    lyricContainer.textContent = "";
+  }
+}
+
+/* ================= CANVAS ================= */
+
 function resize(){
-  canvas.width=innerWidth;
-  canvas.height=innerHeight;
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 }
 resize();
-window.onresize=resize;
+window.onresize = resize;
 
-/* ===== ASPECT RATIO DRAW ===== */
 function draw(){
-  if(bgVideo.readyState>=2){
-    const cw=canvas.width,ch=canvas.height;
-    const vw=bgVideo.videoWidth,vh=bgVideo.videoHeight;
-    const scale=Math.max(cw/vw,ch/vh);
-    const w=vw*scale,h=vh*scale;
-    ctx.drawImage(bgVideo,(cw-w)/2,(ch-h)/2,w,h);
+  if(playingTransition && transitionVideo.readyState >= 2){
+    ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
+  } else if(bgVideo.readyState >= 2){
+    ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
+    updateLyrics(); // NEW: Update lyrics while drawing
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ===== VIDEO LIST ===== */
+/* ================= INIT ================= */
+
+bgVideo.src = currentVideo;
+document.body.addEventListener("click", ()=> bgVideo.play().catch(()=>{}), {once:true});
+
+/* ================= VIDEO POPUP ================= */
+
+function openVideoPopup(){ videoPopup.style.display="flex"; }
+function closeVideoPopup(){ videoPopup.style.display="none"; }
+
 videos.forEach(v=>{
-  const d=document.createElement("div");
+  const d = document.createElement("div");
   d.className="popupItem";
   d.textContent=v.replace(".mp4","");
   d.onclick=()=>{
     currentVideo=v;
     bgVideo.src=v;
     bgVideo.play().catch(()=>{});
+    if(currentMusic) bgMusic.play().catch(()=>{});
     closeVideoPopup();
   };
   videoList.appendChild(d);
 });
 
-/* ===== MUSIC LIST ===== */
+/* ================= MUSIC POPUP ================= */
+
+function openMusicPopup(){ musicPopup.style.display="flex"; }
+function closeMusicPopup(){ musicPopup.style.display="none"; }
+
 musicTracks.forEach(m=>{
   const d=document.createElement("div");
   d.className="popupItem";
   d.textContent=m.replace(".mp3","");
   d.onclick=()=>{
     currentMusic=m;
+    bgMusic.pause();
     bgMusic.src=m;
+    bgMusic.load();
     bgMusic.play().catch(()=>{});
-    lyricsText.textContent="";
-    if(m==="pastlives.mp3") loadLyrics();
     closeMusicPopup();
   };
   musicList.appendChild(d);
 });
 
-/* ===== LYRICS ===== */
-async function loadLyrics(){
-  const res=await fetch("pastlives.json");
-  const data=await res.json();
-  lyrics=data.lyrics.map(l=>({
-    time:toSec(l.timestamp),
-    text:l.text
-  }));
-}
+/* ================= START ================= */
 
-function toSec(t){
-  const [m,s]=t.split(":").map(Number);
-  return m*60+s;
-}
-
-bgMusic.addEventListener("timeupdate",()=>{
-  if(currentMusic!=="pastlives.mp3") return;
-  const t=bgMusic.currentTime;
-  for(let i=lyrics.length-1;i>=0;i--){
-    if(t>=lyrics[i].time){
-      lyricsText.textContent=lyrics[i].text;
-      break;
-    }
-  }
-});
-
-/* ===== POPUP CONTROLS ===== */
-function openVideoPopup(){ videoPopup.style.display="flex"; }
-function closeVideoPopup(){ videoPopup.style.display="none"; }
-function openMusicPopup(){ musicPopup.style.display="flex"; }
-function closeMusicPopup(){ musicPopup.style.display="none"; }
-
-/* ===== START ===== */
 startBtn.onclick=()=>{
   overlay.style.display="none";
-  bgVideo.src=currentVideo;
-  bgVideo.play().catch(()=>{});
-  if(currentMusic) bgMusic.play().catch(()=>{});
-};
-</script>
+  bgVideo.pause();
+  bgMusic.pause();
 
+  playingTransition=true;
+  transitionVideo.currentTime=0;
+  transitionSound.currentTime=0;
+
+  transitionVideo.play();
+  transitionSound.play();
+
+  transitionVideo.onended=()=>{
+    playingTransition=false;
+    bgVideo.play().catch(()=>{});
+    if(currentMusic) bgMusic.play().catch(()=>{});
+  };
+};
+
+/* === NEW: Transition after everything (Song End) === */
+bgMusic.onended = () => {
+    lyricContainer.textContent = "";
+    playingTransition = true;
+    transitionVideo.currentTime = 0;
+    transitionSound.play();
+    transitionVideo.play();
+    
+    transitionVideo.onended = () => {
+        playingTransition = false;
+        overlay.style.display = "flex"; // Return to menu after song and transition
+    };
+};
+
+</script>
 </body>
-</html>
+  </html>
+  
