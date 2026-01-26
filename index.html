@@ -188,7 +188,8 @@ async function loadLyrics(songFile) {
 }
 
 function updateLyrics() {
-  if (currentLyrics.length > 0) {
+  // Only show lyrics if we aren't in the menu/overlay
+  if (currentLyrics.length > 0 && overlay.style.display === "none") {
     const currentTime = bgMusic.currentTime;
     let activeText = "";
     
@@ -200,6 +201,8 @@ function updateLyrics() {
       }
     }
     lyricContainer.textContent = activeText;
+  } else {
+    lyricContainer.textContent = "";
   }
 }
 
@@ -239,7 +242,8 @@ videos.forEach(v=>{
   d.onclick=()=>{
     currentVideo=v;
     bgVideo.src=v;
-    bgVideo.load();
+    // UPDATED: Play instantly in background when selected
+    bgVideo.play().catch(()=>{});
     closeVideoPopup();
   };
   videoList.appendChild(d);
@@ -254,7 +258,7 @@ musicTracks.forEach(m=>{
     currentMusic=m;
     bgMusic.src=m;
     bgMusic.load();
-    loadLyrics(m); // Fetch JSON for this song
+    loadLyrics(m);
     closeMusicPopup();
   };
   musicList.appendChild(d);
@@ -267,7 +271,9 @@ startBtn.onclick=()=>{
   
   overlay.style.display="none";
   
-  // Start Transition
+  // Pause the background preview to start the clean transition
+  bgVideo.pause();
+  
   playingTransition=true;
   transitionVideo.currentTime=0;
   transitionSound.currentTime=0;
@@ -281,7 +287,6 @@ startBtn.onclick=()=>{
   };
 };
 
-// Transition after song finishes
 bgMusic.onended = () => {
     lyricContainer.textContent = "";
     playingTransition = true;
@@ -291,12 +296,16 @@ bgMusic.onended = () => {
     
     transitionVideo.onended = () => {
         playingTransition = false;
-        overlay.style.display = "flex"; // Return to menu
+        overlay.style.display = "flex";
     };
 };
 
-// Initial Video Load
+// Initial setup
 bgVideo.src = currentVideo;
+// Ensures the first play works after user interaction
+document.body.addEventListener("click", () => {
+  if(bgVideo.paused && !playingTransition) bgVideo.play().catch(()=>{});
+}, {once: true});
 
 </script>
 </body>
