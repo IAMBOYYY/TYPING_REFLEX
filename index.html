@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Bubble Reflex - Lyrics Edition</title>
+<title>Bubble Reflex</title>
 
 <style>
 body{
@@ -25,7 +25,7 @@ body{
   z-index:10;
   display:flex;
   flex-direction:column;
-  justify(content:center;
+  justify-content:center;
   align-items:center;
   gap:22px;
   backdrop-filter: blur(6px);
@@ -42,7 +42,6 @@ body{
   font-size:18px;
   padding:14px 36px;
   border:2px solid #ccc;
-  font-weight: bold;
 }
 
 #videoPopup,
@@ -62,7 +61,6 @@ body{
   border-radius:20px;
   padding:20px;
   max-height:70vh;
-  width: 80%;
   overflow-y:auto;
   display:flex;
   flex-direction:column;
@@ -80,22 +78,20 @@ body{
 }
 .popupItem:hover{ background:#eee; }
 
-/* Lyrics Styling */
+/* Lyrics Sync Display */
 #lyricContainer {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
   color: white;
-  font-size: 28px;
-  font-weight: 800;
+  font-size: 26px;
+  font-weight: bold;
   text-align: center;
-  text-shadow: 0px 0px 15px rgba(0,0,0,1), 2px 2px 4px rgba(0,0,0,0.8);
+  text-shadow: 2px 2px 10px rgba(0,0,0,0.8);
   z-index: 5;
   pointer-events: none;
-  width: 85%;
-  line-height: 1.4;
-  transition: opacity 0.2s ease;
+  width: 80%;
 }
 </style>
 </head>
@@ -108,7 +104,7 @@ body{
   <source src="videotrans.mp4">
 </video>
 
-<audio id="bgMusic"></audio>
+<audio id="bgMusic" loop></audio>
 <audio id="transitionSound" src="transition.mp3"></audio>
 
 <canvas id="videoCanvas"></canvas>
@@ -116,10 +112,10 @@ body{
 <div id="lyricContainer"></div>
 
 <div id="overlay">
-  <h1 style="text-shadow: 2px 2px 10px rgba(0,0,0,0.5);">Bubble Reflex</h1>
+  <h1>Bubble Reflex</h1>
   <button class="neu-button" onclick="openVideoPopup()">Select Video</button>
   <button class="neu-button" onclick="openMusicPopup()">Select Music</button>
-  <button id="startBtn" class="neu-button" style="background: #4CAF50; color: white;">Start</button>
+  <button id="startBtn" class="neu-button">Start</button>
 </div>
 
 <div id="videoPopup" onclick="closeVideoPopup()">
@@ -131,7 +127,7 @@ body{
 </div>
 
 <script>
-/* ================= FULL DATA FROM GITHUB ================= */
+/* ================= DATA ================= */
 
 const videos = [
   "alya.mp4", "anime.mp4", "animegirl.mp4", "asteronout.mp4", 
@@ -160,7 +156,7 @@ const lyricContainer = document.getElementById("lyricContainer");
 const canvas = document.getElementById("videoCanvas");
 const ctx = canvas.getContext("2d");
 
-let currentVideo = videos[0];
+let currentVideo = videos[Math.floor(Math.random()*videos.length)];
 let currentMusic = "";
 let playingTransition = false;
 let currentLyrics = [];
@@ -192,13 +188,10 @@ function updateLyrics() {
   if (currentLyrics.length > 0 && overlay.style.display === "none") {
     const currentTime = bgMusic.currentTime;
     let activeText = "";
-    
     for (let i = 0; i < currentLyrics.length; i++) {
       if (currentTime >= currentLyrics[i].time) {
         activeText = currentLyrics[i].text;
-      } else {
-        break;
-      }
+      } else { break; }
     }
     lyricContainer.textContent = activeText;
   } else {
@@ -206,7 +199,7 @@ function updateLyrics() {
   }
 }
 
-/* ================= CANVAS RENDER ================= */
+/* ================= CANVAS ================= */
 
 function resize(){
   canvas.width = innerWidth;
@@ -216,25 +209,26 @@ resize();
 window.onresize = resize;
 
 function draw(){
-  ctx.clearRect(0,0,canvas.width, canvas.height);
   if(playingTransition && transitionVideo.readyState >= 2){
     ctx.drawImage(transitionVideo,0,0,canvas.width,canvas.height);
   } else if(bgVideo.readyState >= 2){
     ctx.drawImage(bgVideo,0,0,canvas.width,canvas.height);
-    updateLyrics(); 
+    updateLyrics();
   }
   requestAnimationFrame(draw);
 }
 draw();
 
-/* ================= POPUP CONTROLS ================= */
+/* ================= INIT ================= */
+
+bgVideo.src = currentVideo;
+document.body.addEventListener("click", ()=> bgVideo.play().catch(()=>{}), {once:true});
+
+/* ================= VIDEO POPUP ================= */
 
 function openVideoPopup(){ videoPopup.style.display="flex"; }
 function closeVideoPopup(){ videoPopup.style.display="none"; }
-function openMusicPopup(){ musicPopup.style.display="flex"; }
-function closeMusicPopup(){ musicPopup.style.display="none"; }
 
-// Populate Video List
 videos.forEach(v=>{
   const d = document.createElement("div");
   d.className="popupItem";
@@ -242,13 +236,17 @@ videos.forEach(v=>{
   d.onclick=()=>{
     currentVideo=v;
     bgVideo.src=v;
-    bgVideo.play().catch(()=>{});
+    bgVideo.play().catch(()=>{}); // Autoplay on select
     closeVideoPopup();
   };
   videoList.appendChild(d);
 });
 
-// Populate Music List
+/* ================= MUSIC POPUP ================= */
+
+function openMusicPopup(){ musicPopup.style.display="flex"; }
+function closeMusicPopup(){ musicPopup.style.display="none"; }
+
 musicTracks.forEach(m=>{
   const d=document.createElement("div");
   d.className="popupItem";
@@ -263,17 +261,18 @@ musicTracks.forEach(m=>{
   musicList.appendChild(d);
 });
 
-/* ================= GAME LOGIC ================= */
+/* ================= START ================= */
 
 startBtn.onclick=()=>{
-  if(!currentMusic) { alert("Please select music first!"); return; }
-  
+  if(!currentMusic) { alert("Select Music first!"); return; }
   overlay.style.display="none";
   bgVideo.pause();
-  
+  bgMusic.pause();
+
   playingTransition=true;
   transitionVideo.currentTime=0;
   transitionSound.currentTime=0;
+
   transitionVideo.play();
   transitionSound.play();
 
@@ -284,26 +283,20 @@ startBtn.onclick=()=>{
   };
 };
 
+// Auto-transition after song ends
 bgMusic.onended = () => {
     lyricContainer.textContent = "";
     playingTransition = true;
     transitionVideo.currentTime = 0;
     transitionVideo.play();
     transitionSound.play();
-    
     transitionVideo.onended = () => {
         playingTransition = false;
         overlay.style.display = "flex";
     };
 };
-
-// Initial setup
-bgVideo.src = currentVideo;
-document.body.addEventListener("click", () => {
-  if(bgVideo.paused && !playingTransition) bgVideo.play().catch(()=>{});
-}, {once: true});
-
 </script>
+
 </body>
   </html>
   
