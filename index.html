@@ -25,7 +25,7 @@ body{
   z-index:10;
   display:flex;
   flex-direction:column;
-  justify-content:center;
+  justify(content:center;
   align-items:center;
   gap:22px;
   backdrop-filter: blur(6px);
@@ -146,7 +146,8 @@ const videos = [
 const musicTracks = [
   "astheticdb.mp3",
   "cigarette.mp3",
-  "pastlives.mp3"
+  "pastlives.mp3",
+  "Powf - death bed (slowed).mp3"
 ];
 
 /* ================= ELEMENTS ================= */
@@ -188,7 +189,6 @@ async function loadLyrics(songFile) {
 }
 
 function updateLyrics() {
-  // Only show lyrics if we aren't in the menu/overlay
   if (currentLyrics.length > 0 && overlay.style.display === "none") {
     const currentTime = bgMusic.currentTime;
     let activeText = "";
@@ -242,7 +242,6 @@ videos.forEach(v=>{
   d.onclick=()=>{
     currentVideo=v;
     bgVideo.src=v;
-    // UPDATED: Play instantly in background when selected
     bgVideo.play().catch(()=>{});
     closeVideoPopup();
   };
@@ -270,8 +269,6 @@ startBtn.onclick=()=>{
   if(!currentMusic) { alert("Please select music first!"); return; }
   
   overlay.style.display="none";
-  
-  // Pause the background preview to start the clean transition
   bgVideo.pause();
   
   playingTransition=true;
@@ -302,7 +299,6 @@ bgMusic.onended = () => {
 
 // Initial setup
 bgVideo.src = currentVideo;
-// Ensures the first play works after user interaction
 document.body.addEventListener("click", () => {
   if(bgVideo.paused && !playingTransition) bgVideo.play().catch(()=>{});
 }, {once: true});
